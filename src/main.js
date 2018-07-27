@@ -1,14 +1,18 @@
+/* istanbul ignore next */
 import 'whatwg-fetch'
 
 let globalOption = {
-    headers: new Headers(),
-    mode: "same-origin",
-    credentials: "include",
-    cache: "reload",
-    redirect: "follow",
-    referrer: "client",
-    timeout: 30000
+    "headers": new Headers({
+        "Content-Type": "application/json"
+    }),
+    "mode": "same-origin",
+    "credentials": "include",
+    "cache": "reload",
+    "redirect": "follow",
+    "referrer": "client",
+    "timeout": 30000
 }
+
 let setOptions = (options) => {
     globalOption = Object.assign({}, globalOption, options)
 }
@@ -16,7 +20,7 @@ let setOptions = (options) => {
 let parseJSON = (response) => {
     return response.json()
         .catch(err => {
-            throw new Error("JSON Parse Error")
+            throw new Error("JSON Parse Error: " + err + " " + response.url)
         })
 }
 
@@ -24,7 +28,7 @@ let checkStatus = (response) => {
     if ((response.status >= 200 && response.status < 300) || response.status == 304) {
         return response
     } else {
-        throw new Error(response.statusText)
+        throw new Error(response.url)
     }
 }
 
@@ -42,6 +46,14 @@ let setGetURL = (url, data = {}) => {
 
 let getJSON = (url, data = {}, option = {}) => {
     let fetchOption = Object.assign({}, globalOption, { method: "GET" }, option)
+    let fetchURL = setGetURL(url, data)
+
+    return _fetch(fetchURL, fetchOption)
+        .then(parseJSON).then(handleFetchPass, handleFetchError)
+}
+
+let deleteJSON = (url, data = {}, option = {}) => {
+    let fetchOption = Object.assign({}, globalOption, { method: "DELETE" }, option)
     let fetchURL = setGetURL(url, data)
 
     return _fetch(fetchURL, fetchOption)
@@ -73,25 +85,32 @@ let handleFetchPass = (data) => {
 let handleFetchError = (error) => {
     typeof globalOption.fetchError === "function" && globalOption.fetchError(error)
 
-    throw new Error(error.message)
+    error = error instanceof Error ? error : new Error(error)
+    throw error
 }
 
 let getJSONP = (url, data = {}, option = {}) => {
-    data.callback = option.callback || "callback"
-
+    let callbackValue = "jsonp" + +new Date()
     let jsonpElement = document.createElement("script")
+    data[option.callbackName || "_callback"] = callbackValue
     let fetchURL = setGetURL(url, data)
-    jsonpElement.setAttribute("src", fetchURL)
     let head = document.head || document.querySelector("head") || document.documentElement
+
+    jsonpElement.setAttribute("src", fetchURL)
+    jsonpElement.setAttribute("charset", "utf-8")
+    jsonpElement.setAttribute("defer", true)
+    jsonpElement.setAttribute("async", true)
     head.insertBefore(jsonpElement, head.firstChild)
 
     return new Promise((resolve, reject) => {
-        window[data.callback] = (payload) => {
+        window[callbackValue] = (payload) => {
             resolve(payload)
+            head.removeChild(jsonpElement)
         }
 
         jsonpElement.onerror = () => {
             reject()
+            head.removeChild(jsonpElement)
         }
 
     })
@@ -116,22 +135,19 @@ let _fetch = (url, fetchOption) => {
             resolve(response)
         }, (error) => {
             clearTimeout(timer)
+            error.url = url
             error.fetchOption = fetchOption
             reject(error)
         })
     })
     .then(checkStatus)
 }
-// todo
-// head delete jsonp
-// unit test
-// global setup bug
-// https://zh.wikipedia.org/wiki/%E8%B6%85%E6%96%87%E6%9C%AC%E4%BC%A0%E8%BE%93%E5%8D%8F%E8%AE%AE
 
 export default {
     setOptions,
     getJSONP,
     getJSON,
     postJSON,
-    putJSON
+    putJSON,
+    deleteJSON
 }

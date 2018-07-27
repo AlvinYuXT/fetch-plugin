@@ -1,9 +1,12 @@
 # fetch-plugin
 
-fetch polyfill with **TIMEOUT** setting and other options, extend from whatwg-fetch
+fetch polyfill with **TIMEOUT** setting and **JSONP**, extend from whatwg-fetch
 
 if you need other feature or got some issue, please let me know~
 
+[![Build Status](https://travis-ci.org/jfw10973/fetch-plugin.svg?branch=master)](https://travis-ci.org/jfw10973/fetch-plugin)
+[![Coverage Status](https://coveralls.io/repos/github/jfw10973/fetch-plugin/badge.svg?branch=master)](https://coveralls.io/github/jfw10973/fetch-plugin?branch=master)
+[![Dependency Status](https://david-dm.org/jfw10973/fetch-plugin/status.svg)](https://david-dm.org/jfw10973/fetch-plugin)
 ## Installation
 
 via npm:
@@ -12,19 +15,27 @@ via npm:
 $ npm install fetch-plugin
 ```
 
+also could load in browers directly, use "**_fetch**" as a UMD
+
+```html
+<script src="https://raw.githubusercontent.com/jfw10973/fetch-plugin/master/dist/index.umd.min.js"></script>
+```
+
 ## API
 
 default Option
 
 ```json
 {
-    "headers": new Headers(),
+    "headers": new Headers({
+        "Content-Type": "application/json"
+    }),
     "mode": "same-origin",
     "credentials": "include",
     "cache": "reload",
     "redirect": "follow",
     "referrer": "client",
-    "timeout": 3000
+    "timeout": 30000
 }
 ```
 
@@ -58,15 +69,23 @@ for post request
 fetch.postJSON(URL, [DATA], [OPTIONS])
 ```
 
-for jsonp request, options only available for callback
+for put request
+
+```js
+fetch.putJSON(URL, [DATA], [OPTIONS])
+```
+
+for delete request
+
+```js
+fetch.deleteJSON(URL, [DATA], [OPTIONS])
+```
+
+for jsonp request, options only available for callbackName
 
 ```js
 fetch.getJSONP(URL, [DATA], [OPTIONS])
 ```
-
-for Other request
-
-todo...
 
 ## example
 
