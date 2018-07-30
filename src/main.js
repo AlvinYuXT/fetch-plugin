@@ -117,30 +117,32 @@ let getJSONP = (url, data = {}, option = {}) => {
 }
 
 let _fetch = (url, fetchOption) => {
-    return new Promise((resolve, reject) => {
-        let timer = 0
-        let myRequest = new Request(url, fetchOption);
-
-        timer = setTimeout(() => {
-            let error = new Error(`${url} timeout`)
-            error.fetchOption = fetchOption
-            reject(error)
-        }, fetchOption.timeout)
-
-        typeof fetchOption.fetchStart === "function" && fetchOption.fetchStart()
-
-        fetch(myRequest).then((response) => {
-            clearTimeout(timer)
-            response.fetchOption = fetchOption
-            resolve(response)
-        }, (error) => {
-            clearTimeout(timer)
-            error.url = url
-            error.fetchOption = fetchOption
-            reject(error)
+    let myRequest = new Request(url, fetchOption);
+    function doRequest() {
+        return new Promise((resolve, reject) => {
+            fetch(myRequest).then((response) => {
+                response.fetchOption = fetchOption
+                resolve(response)
+            }, (error) => {
+                error.url = url
+                error.fetchOption = fetchOption
+                reject(error)
+            })
         })
-    })
-    .then(checkStatus)
+    }
+
+    let p = Promise.race([
+        doRequest(), 
+        new Promise(function (resolve, reject) {
+            setTimeout(() => {
+                let error = new Error(`${url} timeout`)
+                error.fetchOption = fetchOption
+                reject(error)
+            }, fetchOption.timeout)
+        })
+    ])
+
+    return p.then(checkStatus)
 }
 
 export default {

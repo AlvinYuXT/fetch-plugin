@@ -613,29 +613,29 @@
   };
 
   var _fetch = function _fetch(url, fetchOption) {
-      return new Promise(function (resolve, reject) {
-          var timer = 0;
-          var myRequest = new Request(url, fetchOption);
+      var myRequest = new Request(url, fetchOption);
+      function doRequest() {
+          return new Promise(function (resolve, reject) {
+              fetch(myRequest).then(function (response) {
+                  response.fetchOption = fetchOption;
+                  resolve(response);
+              }, function (error) {
+                  error.url = url;
+                  error.fetchOption = fetchOption;
+                  reject(error);
+              });
+          });
+      }
 
-          timer = setTimeout(function () {
+      var p = Promise.race([doRequest(), new Promise(function (resolve, reject) {
+          setTimeout(function () {
               var error = new Error(url + " timeout");
               error.fetchOption = fetchOption;
               reject(error);
           }, fetchOption.timeout);
+      })]);
 
-          typeof fetchOption.fetchStart === "function" && fetchOption.fetchStart();
-
-          fetch(myRequest).then(function (response) {
-              clearTimeout(timer);
-              response.fetchOption = fetchOption;
-              resolve(response);
-          }, function (error) {
-              clearTimeout(timer);
-              error.url = url;
-              error.fetchOption = fetchOption;
-              reject(error);
-          });
-      }).then(checkStatus);
+      return p.then(checkStatus);
   };
 
   var main = {

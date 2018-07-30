@@ -7,7 +7,7 @@ describe("fetch-test", function () {
 
     before(async function (){
         this.timeout(10000)
-        browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+        browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox']});
         const page = await browser.newPage();
 
         // Enable both JavaScript and CSS coverage
@@ -20,7 +20,6 @@ describe("fetch-test", function () {
         await page.addScriptTag({
             path: "./dist/index.umd.js"
         })
-
         testDataGet = [{ id: 2, body: 'some comment', postId: 1 }]
         resultGet = await page.evaluate(async () => {
             return await _fetch.getJSON('http://localhost:3000/comments/', {
